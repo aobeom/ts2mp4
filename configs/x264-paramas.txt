@@ -1,0 +1,1 @@
+--preset slow --crf 20 --level 4.1 --tune film --deblock -1:-1 --keyint 360 --min-keyint 1 --weightb --me umh --ref 13 --bframes 6 --rc-lookahead 80 --aq-mode 1 --aq-strength 0.9 --no-fast-pskip --vbv-bufsize 10000 --vbv-maxrate 10000

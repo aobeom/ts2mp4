@@ -1,0 +1,1 @@
+--preset slow --crf 20 -D 10 --weightb --ctu 32 --merange 44 --keyint 360 --min-keyint 1 --rc-lookahead 80 --ref 5 --aq-mode 1 --aq-strength 0.9 --bframes 6 --deblock -1:-1 --no-sao --no-open-gop --no-strong-intra-smoothing --no-rect --no-amp --vbv-bufsize 10000 --vbv-maxrate 8000
