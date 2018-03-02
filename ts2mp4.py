@@ -28,8 +28,12 @@ class ts2mp4(object):
         f = open(name, "wb")
         if self.fps:
             fpsdivisor = 1
+            avs_deint = 'QTGMC(preset="fast",fpsdivisor={},ShutterBlur=1,ShutterAngleSrc=0,ShutterAngleOut=720)\r\n'.format(
+                fpsdivisor)
         else:
             fpsdivisor = 2
+            avs_deint = 'QTGMC(preset="fast",fpsdivisor={})\r\n'.format(
+                fpsdivisor)
         for dll in self.dlls:
             dll_path = os.path.join(dllfolder, dll)
             ext = os.path.splitext(dll)[-1]
@@ -44,11 +48,10 @@ class ts2mp4(object):
         else:
             avs_video = 'LWLibavVideoSource("{}")\r\n'.format(source)
         avs_res = 'LanczosResize({})\r\n'.format(self.res)
-        avs_grain = 'RemoveGrainSSE3_RemoveGrain(3,3)\r\n'
-        avs_deint = 'QTGMC(preset="fast",fpsdivisor={})\r\n'.format(fpsdivisor)
+        # avs_grain = 'RemoveGrainSSE3_RemoveGrain(3,3)\r\n'
         f.write(avs_video)
         f.write(avs_res)
-        f.write(avs_grain)
+        # f.write(avs_grain)
         f.write(avs_deint)
         if self.trim:
             trim = self.trim
@@ -60,10 +63,18 @@ class ts2mp4(object):
         f.close()
         return name
 
-    def audioMethod(self, prog1, prog2, source):
+    def audioMethod(self, prog1, prog2, source, bitrate=0, mode=1):
         output = os.path.splitext(source)[0] + ".m4a"
-        wav2aac = "{vprog} -i {input} -vn -map 0:1 -f wav - | {aprog} - -m 5 --ignorelength -o {output}".format(
-            vprog=prog1, input=source, aprog=prog2, output=output)
+        if mode == 1:
+            wav2aac = "{vprog} -i {input} -vn -f wav - | {aprog} - -m 5 --ignorelength -o {output}".format(
+                vprog=prog1, input=source, aprog=prog2, output=output)
+        else:
+            if bitrate == 0:
+                bitrate = "copy"
+            else:
+                bitrate = "aac -ab {}k".format(bitrate)
+            wav2aac = "{vprog} -i {input} -vn -acodec {bitrate} {output} -y".format(
+                vprog=prog1, input=source, bitrate=bitrate, output=output)
         os.system(wav2aac)
         return output
 
@@ -84,11 +95,18 @@ class ts2mp4(object):
 
 
 def opt():
-    parser = argparse.ArgumentParser(description="Any video convert to AVC / HEVC")
+    parser = argparse.ArgumentParser(
+        description="Any video convert to AVC / HEVC")
     parser.add_argument('-i', dest='video', help='input source', required=True)
     parser.add_argument('-t', dest='trim', help='trim start,end')
-    parser.add_argument('-f', dest='fps', action='store_true', default=False, help='60 FPS')
-    parser.add_argument('-m', dest='mode', type=int, help='Mode [1:x264 / 2:x265]', required=True)
+    parser.add_argument('-f', dest='fps', action='store_true',
+                        default=False, help='60 FPS')
+    parser.add_argument('-a', dest='atype', type=int, default=2,
+                        help='audio type [1:fdkaac / 2:ffmpeg]')
+    parser.add_argument('-m', dest='mode', type=int,
+                        help='mode [1:x264 / 2:x265]', required=True)
+    parser.add_argument('-b', dest='abitrate', type=int,
+                        default=0, help='audio bitrate 128, 144, 192[default: copy]')
     parser.add_argument('-d', dest='deint', action='store_true',
                         default=False, help='deinterlacing switch')
     parser.add_argument('-s', dest='res', type=str, default='1920x1080',
@@ -108,6 +126,8 @@ def main():
     trim = args.trim
     deint = args.deint
     fps = args.fps
+    abitrate = args.abitrate
+    atype = args.atype
 
     path = os.path.join(sys.path[0], "exec")
     avs = os.path.join(path, "avs4x26x.exe")
@@ -123,7 +143,7 @@ def main():
 
     t = ts2mp4(res, params, deint, fps, trim)
     avs_source = t.avsMethod(source)
-    audio_source = t.audioMethod(ffmpeg, aac, source)
+    audio_source = t.audioMethod(ffmpeg, aac, source, abitrate, atype)
     video_source = t.videoMethod(avs, codec, avs_source, ext)
     t.mergeMethod(mp4box, video_source, audio_source)
 
