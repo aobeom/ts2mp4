@@ -4,12 +4,13 @@ import argparse
 
 
 class ts2mp4(object):
-    def __init__(self, res, params, deint, fps, trim=None):
+    def __init__(self, res, params, deint, fps, grain, trim=None):
         self.res = res.replace("x", ",")
         self.params = params
         self.trim = trim
         self.deint = deint
         self.fps = fps
+        self.grain = grain
         self.dlls = [
             "LSMASHSource.dll",
             "mt_masktools-26.dll",
@@ -48,11 +49,12 @@ class ts2mp4(object):
         else:
             avs_video = 'LWLibavVideoSource("{}")\r\n'.format(source)
         avs_res = 'LanczosResize({})\r\n'.format(self.res)
-        # avs_grain = 'RemoveGrainSSE3_RemoveGrain(3,3)\r\n'
         f.write(avs_video)
         f.write(avs_res)
-        # f.write(avs_grain)
         f.write(avs_deint)
+        if self.grain:
+            avs_grain = 'RemoveGrainSSE3_RemoveGrain(3,3)\r\n'
+            f.write(avs_grain)
         if self.trim:
             trim = self.trim
             avs_trim = 'trim({})\r\n'.format(trim)
@@ -109,6 +111,8 @@ def opt():
                         default=0, help='audio bitrate 128, 144, 192[default: copy]')
     parser.add_argument('-d', dest='deint', action='store_true',
                         default=False, help='deinterlacing switch')
+    parser.add_argument('-g', dest='grain', action='store_true',
+                        default=False, help='grain switch')
     parser.add_argument('-s', dest='res', type=str, default='1920x1080',
                         help='display resolution [default: 1920x1080]')
     parser.add_argument('-c', dest='config',
@@ -128,6 +132,7 @@ def main():
     fps = args.fps
     abitrate = args.abitrate
     atype = args.atype
+    grain = args.grain
 
     path = os.path.join(sys.path[0], "exec")
     avs = os.path.join(path, "avs4x26x.exe")
@@ -141,7 +146,7 @@ def main():
     ffmpeg = os.path.join(path, "ffmpeg.exe")
     mp4box = os.path.join(path, "mp4box", "mp4box.exe")
 
-    t = ts2mp4(res, params, deint, fps, trim)
+    t = ts2mp4(res, params, deint, fps, grain, trim)
     avs_source = t.avsMethod(source)
     audio_source = t.audioMethod(ffmpeg, aac, source, abitrate, atype)
     video_source = t.videoMethod(avs, codec, avs_source, ext)
