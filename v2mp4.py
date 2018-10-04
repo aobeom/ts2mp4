@@ -39,7 +39,7 @@ class v2mp4(object):
             # 反交错模式 5烂2/帧帧烂 和double_fps互斥
             if ivtc:
                 # 1: 24 FPS 3:30 FPS
-                avs_deint = 'tfm().tdecimate(hybrid=1)'
+                avs_deint = 'tfm().tdecimate(hybrid=1)\r\n'
             else:
                 avs_deint = 'QTGMC(preset="fast",fpsdivisor=2)\r\n'
             if double_fps:
